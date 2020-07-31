@@ -1,0 +1,7 @@
+example/app
+example/*.so
+
+enforce
+elfinject
+
+/target
