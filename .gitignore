@@ -1,6 +1,10 @@
 example/app
 example/*.so
 
+*.o
+*.so
+
+app
 enforce
 elfinject
 
