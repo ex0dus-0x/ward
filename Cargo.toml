@@ -9,6 +9,5 @@ edition = "2018"
 [dependencies]
 
 clap = "2.33.*"
-
 goblin = "0.2.3"
-microkv = "*"
+microkv = "0.2.3"

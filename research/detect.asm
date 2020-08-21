@@ -1,9 +1,9 @@
 BITS 64
 
 SECTION .text
-global main
+global _start
 
-main:
+_start:
         push    rbp                                     ; 0000 _ 55
         mov     rbp, rsp                                ; 0001 _ 48: 89. E5
         mov     dword [rbp-24H], edi                    ; 0004 _ 89. 7D, DC

@@ -10,6 +10,8 @@ use std::fs;
 use std::path::Path;
 use std::error::Error;
 
+use self::app::WardApp;
+
 fn parse_args<'a>() -> ArgMatches<'a> {
     App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
@@ -17,14 +19,20 @@ fn parse_args<'a>() -> ArgMatches<'a> {
         .about(env!("CARGO_PKG_DESCRIPTION"))
         .setting(AppSettings::ArgRequiredElseHelp)
 
-        // `protect` subcommand for static patching input ELFs
+        // `protect` subcommand for incorporating the target ELF(s) with the protection runtime
         .subcommand(SubCommand::with_name("protect")
-            .about("Statically patches input ELF binary/binaries with the protection runtime.")
+            .about("Statically injects binary into a protected runtime.")
             .arg(Arg::with_name("BINARY")
                 .help("Path to compiled binary or binaries to protect")
                 .index(1)
                 .multiple(true)
                 .required(true),
+            )
+            .arg(Arg::with_name("keep")
+                .short("k")
+                .long("keep")
+                .help("Keeps the originals that were protected, and renames finalized secured binary.")
+                .required(false),
             )
         )
 
@@ -45,31 +53,42 @@ fn parse_args<'a>() -> ArgMatches<'a> {
 fn run() -> Result<(), Box<dyn Error>> {
     let args: ArgMatches = parse_args();
 
+    // open or initialize microkv store to interact with file signatures
+
     // parse subcommands
     match args.subcommand() {
         ("protect", Some(subargs)) => {
-            let bins: Vec<&Path> = subargs.values_of("BINARY").unwrap()
-                .collect::<Vec<&str>>()
+            let bins: Vec<&str> = subargs.values_of("BINARY").unwrap().collect();
+            let binpaths: Vec<&Path> = bins
                 .iter()
                 .map(|b| Path::new(b))
                 .collect();
 
-        }
+            // given path in target binary list, initialize a new `WardApp` to protect
+            for path in bins.iter() {
+                let app: App = WardApp::init(path);
+            }
+        },
         ("verify", Some(subargs)) => {
-            todo!()
+            let bins: Vec<&str> = subargs.values_of("BINARY").unwrap().collect();
+            let binpaths: Vec<&Path> = bins
+                .iter()
+                .map(|b| Path::new(b))
+                .collect();
+
+            // given path in target binary list, parse out objects
+            for path in bins.iter() {
+                let buffer = fs::read(path)?;
+                let bin = match Object::parse(&buffer)? {
+                    Object::Elf(elf) => elf,
+                    _ => {
+                        panic!("unsupported");
+                    }
+                };
+            }
         },
         _ => todo!()
-
     }
-
-    let path = Path::new("./target/bin/ward");
-    let buffer = fs::read(path)?;
-    let bin = match Object::parse(&buffer)? {
-        Object::Elf(elf) => elf,
-        _ => {
-            panic!("unsupported");
-        }
-    };
     Ok(())
 }
 
