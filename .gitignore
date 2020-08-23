@@ -1,6 +1,8 @@
 example/app
 example/*.so
 
+protector/src/main.rs
+
 *.o
 *.so
 

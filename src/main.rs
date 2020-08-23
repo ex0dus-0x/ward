@@ -10,7 +10,8 @@ use std::fs;
 use std::path::Path;
 use std::error::Error;
 
-use self::app::WardApp;
+mod protect;
+use crate::protect::WardApp;
 
 fn parse_args<'a>() -> ArgMatches<'a> {
     App::new(env!("CARGO_PKG_NAME"))
@@ -34,6 +35,12 @@ fn parse_args<'a>() -> ArgMatches<'a> {
                 .help("Keeps the originals that were protected, and renames finalized secured binary.")
                 .required(false),
             )
+
+            // protection configurations:
+            // - antidebug
+            // - mitigate code injection and preloading
+            // - memfd itself is already a security feature
+            //
         )
 
         // `verify` subcommand for checking if binary is secured
@@ -65,8 +72,8 @@ fn run() -> Result<(), Box<dyn Error>> {
                 .collect();
 
             // given path in target binary list, initialize a new `WardApp` to protect
-            for path in bins.iter() {
-                let app: App = WardApp::init(path);
+            for path in binpaths.iter() {
+                let app: WardApp = WardApp::init(path.to_path_buf());
             }
         },
         ("verify", Some(subargs)) => {
