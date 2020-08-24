@@ -10,4 +10,4 @@ app
 enforce
 elfinject
 
-/target
+target/
