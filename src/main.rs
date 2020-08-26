@@ -6,9 +6,9 @@ use goblin::Object;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
+use std::error::Error;
 use std::fs;
 use std::path::Path;
-use std::error::Error;
 
 mod protect;
 use crate::protect::WardApp;
@@ -56,7 +56,6 @@ fn parse_args<'a>() -> ArgMatches<'a> {
         .get_matches()
 }
 
-
 fn run() -> Result<(), Box<dyn Error>> {
     let args: ArgMatches = parse_args();
 
@@ -66,22 +65,17 @@ fn run() -> Result<(), Box<dyn Error>> {
     match args.subcommand() {
         ("protect", Some(subargs)) => {
             let bins: Vec<&str> = subargs.values_of("BINARY").unwrap().collect();
-            let binpaths: Vec<&Path> = bins
-                .iter()
-                .map(|b| Path::new(b))
-                .collect();
+            let binpaths: Vec<&Path> = bins.iter().map(|b| Path::new(b)).collect();
 
             // given path in target binary list, initialize a new `WardApp` to protect
             for path in binpaths.iter() {
-                let app: WardApp = WardApp::init(path.to_path_buf());
+                let app: WardApp = WardApp::new(path.to_path_buf())?;
+                app.protect();
             }
-        },
+        }
         ("verify", Some(subargs)) => {
             let bins: Vec<&str> = subargs.values_of("BINARY").unwrap().collect();
-            let binpaths: Vec<&Path> = bins
-                .iter()
-                .map(|b| Path::new(b))
-                .collect();
+            let binpaths: Vec<&Path> = bins.iter().map(|b| Path::new(b)).collect();
 
             // given path in target binary list, parse out objects
             for path in bins.iter() {
@@ -93,16 +87,15 @@ fn run() -> Result<(), Box<dyn Error>> {
                     }
                 };
             }
-        },
-        _ => todo!()
+        }
+        _ => todo!(),
     }
     Ok(())
 }
 
-
 fn main() {
     match run() {
         Err(e) => eprintln!("{}", e),
-        _ => {},
+        _ => {}
     }
 }

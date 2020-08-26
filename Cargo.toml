@@ -10,4 +10,5 @@ edition = "2018"
 
 clap = "2.33.*"
 goblin = "0.2.3"
+flate2 = "1.0.*"
 microkv = "0.2.3"
