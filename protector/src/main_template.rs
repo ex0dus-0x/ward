@@ -3,10 +3,14 @@ use goblin::elf::Elf;
 
 use std::fs;
 use std::env;
+use std::error::Error;
 use std::path::Path;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = env::args().collect::<Vec<String>>();
+    if args.len() > 1 {
+        panic!("No other arguments required. Run executable as is.");
+    }
 
     // set program to parse as this current one
     let prog: &Path = Path::new(&args[0]);
@@ -19,6 +23,8 @@ fn main() {
             panic!(e);
         }
     };
+
+    Ok(())
 }
 
 

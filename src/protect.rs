@@ -28,7 +28,7 @@ impl Protector for Elf<'_> {
     /// point to it for later recovery.
     fn inject(&mut self, hostpath: PathBuf, payload: Vec<u8>) -> io::Result<()> {
         // open protector file and read out contents, we want to write to the end of it
-        // with the standard filesystem facilities.
+        // with the standard filesystem facilities instead of libgoblin
         let mut f = OpenOptions::new().read(true).append(true).open(hostpath)?;
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer)?;
@@ -43,12 +43,11 @@ impl Protector for Elf<'_> {
 
         // iterate over the program header and change the PT_NOTE segment
         //  - change to a PT_LOAD segment since it won't be vacant
-        //  - allow read and executable (TODO: maybe not necessary)
         for ph in self.program_headers.iter_mut() {
             if ph.p_type == program_header::PT_NOTE {
                 ph.p_type = program_header::PT_LOAD;
-                ph.p_flags = program_header::PF_R | program_header::PF_X;
                 ph.p_vaddr = (0xc000000 + payload.len()) as u64;
+                ph.p_offset = payload.len() as u64;
             }
         }
 
@@ -75,14 +74,14 @@ impl WardApp {
         // open target file and read as bytes
         let mut f = File::open(&filepath)?;
         let mut buffer = Vec::new();
-        f.read_to_end(&mut buffer);
+        f.read_to_end(&mut buffer)?;
 
         // compress the contents into a payload
         // TODO: encrypt symmetrically with password if configured
-        let mut _payload = Vec::new();
+        let mut payload = Vec::new();
         let mut deflater = DeflateEncoder::new(&buffer[..], Compression::fast());
-        let count = deflater.read(&mut _payload)?;
-        let binbytes: Vec<u8> = _payload[0..count].to_vec();
+        let count = deflater.read(&mut payload)?;
+        let binbytes: Vec<u8> = payload[0..count].to_vec();
 
         Ok(Self {
             filepath,
