@@ -5,6 +5,7 @@ protector/src/main.rs
 
 *.o
 *.so
+*.out
 
 app
 ward
