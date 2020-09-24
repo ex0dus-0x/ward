@@ -1,6 +1,6 @@
 //! Command line application for `ward`. Interfaces all of the necessary functionality, including
 //! binary signature generation and validation, and using `goblin` in order to wrangle and protect
-//! target binary inputs
+//! target binary inputs.
 
 use goblin::Object;
 

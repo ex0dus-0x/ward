@@ -7,7 +7,7 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Seek, SeekFrom};
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use goblin::elf::program_header;
 use goblin::elf::Elf;
@@ -90,18 +90,17 @@ impl WardApp {
         })
     }
 
-    /// initializes a new protector application, which parses itself as an ELF binary, and reads
-    /// the compressed code hidden in the PT_NOTE-based code cave.
-    fn _init_protector_app(&self) -> PathBuf {
-        todo!()
-    }
 
     /// given a path to a target binary, create a protector app to encapsulate it and inject the
     /// binary into a PT_NOTE-based code cave for recovery and re-execution under a protected environment.
-    pub fn protect(&self) {
+    pub fn protect(&self) -> Result<()> {
+
+        // initialize path to protector application
+        let protector: &Path = &Path::new("protector/protector");
+
         // initialize a new protector binary and open as ELF
-        let protector: PathBuf = self._init_protector_app();
-        let buffer = fs::read(&protector).unwrap();
+        // TODO: if not exist, user did not invoke Makefile
+        let buffer = fs::read(&protector.to_path_buf()).unwrap();
         let mut elf = match Elf::parse(&buffer) {
             Ok(bin) => bin,
             Err(e) => {
@@ -110,6 +109,8 @@ impl WardApp {
         };
 
         // inject the compressed binary into the protector binary
-        elf.inject(protector, self.binbytes.clone());
+        elf.inject(protector.to_path_buf(), self.binbytes.clone());
+
+        Ok(())
     }
 }
