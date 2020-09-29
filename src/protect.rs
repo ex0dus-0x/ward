@@ -12,8 +12,9 @@ use std::path::{Path, PathBuf};
 use goblin::elf::program_header;
 use goblin::elf::Elf;
 
-use flate2::read::DeflateEncoder;
+use flate2::write::GzEncoder;
 use flate2::Compression;
+
 
 /// Implements the `Protector` trait for goblin Elf objects, which extend their functionality
 /// to include code injection and extraction.
@@ -36,9 +37,6 @@ impl Protector for Elf<'_> {
         // save file offset of file end for later
         let offset: u64 = f.seek(SeekFrom::End(0))?;
 
-        // given the compressed payload, append to end of file
-        f.write(&payload)?;
-
         // overwrite the .note.ABI-tag section header
 
         // iterate over the program header and change the PT_NOTE segment
@@ -52,6 +50,10 @@ impl Protector for Elf<'_> {
         }
 
         // once done, inject a new section at the end of the binary with the payload
+
+        // given the compressed payload, append to end of file
+        f.write(&payload)?;
+
         Ok(())
     }
 
@@ -76,12 +78,11 @@ impl WardApp {
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer)?;
 
-        // compress the contents into a payload
         // TODO: encrypt symmetrically with password if configured
         let mut payload = Vec::new();
-        let mut deflater = DeflateEncoder::new(&buffer[..], Compression::fast());
-        let count = deflater.read(&mut payload)?;
-        let binbytes: Vec<u8> = payload[0..count].to_vec();
+        let mut deflater = GzEncoder::new(payload, Compression::fast());
+        deflater.write_all(&mut buffer)?;
+        let binbytes: Vec<u8> = deflater.finish()?;
 
         Ok(Self {
             filepath,
@@ -93,7 +94,7 @@ impl WardApp {
 
     /// given a path to a target binary, create a protector app to encapsulate it and inject the
     /// binary into a PT_NOTE-based code cave for recovery and re-execution under a protected environment.
-    pub fn protect(&self) -> Result<()> {
+    pub fn protect(&self) -> Result<(), ()> {
 
         // initialize path to protector application
         let protector: &Path = &Path::new("protector/protector");
@@ -109,6 +110,7 @@ impl WardApp {
         };
 
         // inject the compressed binary into the protector binary
+        println!("Injecting {:?}", self.binbytes);
         elf.inject(protector.to_path_buf(), self.binbytes.clone());
 
         Ok(())

@@ -1,10 +1,10 @@
-CC := gcc
-CFLAGS := -Wall -O2
+CC = gcc
+CFLAGS = -Wall -O2
 
-all: cli protector
+all: cli protect
 
-protector:
-	$(CC) $(CFLAGS) protector/protect.c protector/runtime.c -lelf
+protect:
+	$(CC) $(CFLAGS) -o protector/protector protector/protect.c protector/runtime.c -lelf
 
 cli:
 	cargo build

@@ -3,6 +3,8 @@
  * no-stdlib implementation of the runtime protection functionality
  */
 
+#define BUF_SIZE 2048
+
 extern char **environ;
 
 /* stops any attempts to utilize the `LD_PRELOAD` envvar */
