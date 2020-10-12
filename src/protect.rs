@@ -23,6 +23,8 @@ trait Protector {
     fn extract(&self) -> ();
 }
 
+
+
 impl Protector for Elf<'_> {
     /// When called with a target input file to protect, `inject()` will convert it into compressed
     /// bytes for writing, and manipulate hte .note.ABI-tag section header and PT_NOTE segment to
@@ -40,25 +42,41 @@ impl Protector for Elf<'_> {
         // overwrite the .note.ABI-tag section header
 
         // iterate over the program header and change the PT_NOTE segment
-        //  - change to a PT_LOAD segment since it won't be vacant
         for ph in self.program_headers.iter_mut() {
             if ph.p_type == program_header::PT_NOTE {
+
+                // change to a PT_LOAD segment since it won't be vacant
                 ph.p_type = program_header::PT_LOAD;
+
+                // save and modify the entry point to point to where payload should be
                 ph.p_vaddr = (0xc000000 + payload.len()) as u64;
+                self.entry = ph.p_vaddr;
+
+                // modify filesz and memsz attributes
+                ph.p_filesz += offset;
+                ph.p_memsz += offset;
+
+                // file offset change
                 ph.p_offset = payload.len() as u64;
             }
         }
 
-        // once done, inject a new section at the end of the binary with the payload
+        // TODO: write new elf to new path
 
-        // given the compressed payload, append to end of file
-        f.write(&payload)?;
+        // reopen elf, seek to end, and write payload
+        let mut protected = OpenOptions::new().read(true).append(true).open(hostpath)?;
+        let mut protectedbuf = Vec::new();
+        protected.read_to_end(&mut protectedbuf)?;
 
+        // given the compressed payload and new file, append to end of file
+        protected.write(&payload)?;
         Ok(())
     }
 
-    fn extract(&self) -> () {
-        todo!();
+    fn extract(&self, hostpath: PathBuf) -> () {
+        // iterate over program header and identify new .injected section
+        // find entry point and file seek
+        todo!()
     }
 }
 
@@ -110,7 +128,6 @@ impl WardApp {
         };
 
         // inject the compressed binary into the protector binary
-        println!("Injecting {:?}", self.binbytes);
         elf.inject(protector.to_path_buf(), self.binbytes.clone());
 
         Ok(())
