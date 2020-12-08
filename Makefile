@@ -7,4 +7,4 @@ protect:
 	$(CC) $(CFLAGS) -o protector/protector protector/protect.c protector/runtime.c -lelf
 
 cli:
-	cargo build
+	go build .
