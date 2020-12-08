@@ -1,11 +1,7 @@
 # ward
 
-Security-hardened notary for Linux applications
+An experimental security-hardened notary for Linux binaries. We convert a commonly weaponized ELF infection technique into a defensive mechanism for runtime application self-protection, without the need of whole-system security provenance. Inspired by application notarization on macOS.
 
-## Introduction
+## Technique
 
-__ward__ is a binary hardening tool that helps protect against code injection attacks for Linux executables. It provides an intuitive UI that enables
-users to readily sign and harden Linux apps they've built or installed in a portable manner in userspace. This is to ultimately help mitigate any attempts
-to hijack process runtimes by leveraging `LD_PRELOAD`, and any tampering attempts to the actual executable itself.
-
-Read more about it in my blog post [here]().
+1. Compile a protector runtime app, which dynamically loads and executes the

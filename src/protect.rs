@@ -1,8 +1,8 @@
 //! Defines the `WardApp` interface for consuming a single binary executable. Implements the following
 //! hardening workflow:
 //!
-//!     - compress the executable and embed within the PT_NOTE segment
-//!     - generate a file signature for the given finalized binary
+//! - compress the executable and embed within the PT_NOTE segment
+//! - generate a file signature for the given finalized binary
 
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Seek, SeekFrom};
@@ -22,7 +22,6 @@ trait Protector {
     fn inject(&mut self, hostpath: PathBuf, payload: Vec<u8>) -> io::Result<()>;
     fn extract(&self) -> ();
 }
-
 
 
 impl Protector for Elf<'_> {
