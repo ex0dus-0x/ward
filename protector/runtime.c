@@ -5,6 +5,7 @@
  * 		app before any form of execution occurs.
  */
 #include <fcntl.h> // TODO: inline assembly file i/o
+#include <stdio.h>
 
 #define BUF_SIZE 2048
 
@@ -31,7 +32,7 @@ static char* afterSubstr(char *str, const char *sub)
 }
 
 
-/* static helper for checking libc */Z
+/* static helper for checking libc */
 static int isLib(char *str, const char *lib)
 {
     int i, found;
@@ -95,7 +96,7 @@ int check_preloading(void)
 int check_mmaps(void)
 {
     // stores result of execution
-    char buf[BUF_SIZE];
+    char buffer[BUF_SIZE];
 
     // set after encounter libc shared object
     int after_libc = 0;
@@ -107,8 +108,8 @@ int check_mmaps(void)
         return -1;
     }
 
-    // iteratively read BUFFER_SIZE from mmap file
-    while (fgets(buffer, BUFFER_SIZE, memory_map) != NULL)
+    // iteratively read BUF_SIZE from mmap file
+    while (fgets(buffer, BUF_SIZE, mmap) != NULL)
     {
         // check if libc so entry is found and set flag
         if (isLib(buffer, "libc"))
