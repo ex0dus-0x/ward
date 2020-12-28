@@ -13,7 +13,8 @@ import (
 
 
 type Injector struct {
-    Protector elf.File
+    FilePath string
+    Protector *elf.File
     Target []byte
 }
 
@@ -48,25 +49,6 @@ func Provision(name string) (*string, error) {
 }
 
 
-// Helper to validate a blob of data as an ELF binary with a vacant PT_NOTE header
-func BinaryCheck(data []byte) error {
-    return nil
-}
-
-
-// Helper used to inject the original host into the new protector one through the commonly
-// weaponized PT_NOTE to PT_LOAD infection vector.
-func InjectBinary(protector elf.File, host []byte) {
-    /*
-    var injectSize uint64
-    var shellcode []byte
-
-    // get original entry point to host
-    originalEntryPoint := protector.FileHeader.Entry
-    */
-}
-
-
 // Create a new Injector interface to provision a runtime application
 func NewInjector(binpath string, protector string) (*Injector, error) {
 
@@ -77,13 +59,48 @@ func NewInjector(binpath string, protector string) (*Injector, error) {
     }
 
     // parse protector as ELF binary
-
-    // validate protector as an injectable ELF binary
-    if err = BinaryCheck(targetBytes); err != nil {
+    binary, err := elf.Open(protector)
+    if err != nil {
         return nil, err
     }
 
     return &Injector {
-
+        protector,
+        binary,
+        targetBytes,
     }, nil
 }
+
+
+// Helper used to inject the original host into the new protector one through the commonly
+// weaponized PT_NOTE to PT_LOAD infection vector.
+func (inj *Injector) InjectBinary() {
+
+    // TODO: define
+    var injectSize uint64
+    var fsize uint64
+
+    for _, p := range inj.Protector.Progs {
+        if p.Type == elf.PT_NOTE {
+
+            // change to PT_LOAD segment
+            p.Type = elf.PT_LOAD
+
+            // allow read + exec
+            p.Flags = elf.PF_R | elf.PF_X
+
+            // define virtual memory offset for injected source
+            p.Vaddr = 0xc000000 + uint64(fsize)
+
+            // adjust size to account for injected code
+            p.Filesz += injectSize
+            p.Memsz += injectSize
+
+            // set offset to end of original binary
+            p.Off = uint64(fsize)
+        }
+    }
+    inj.Protector.InsertionEOF = inj.Target
+    return inj.Protector.WriteFile(inj.FilePath)
+}
+
