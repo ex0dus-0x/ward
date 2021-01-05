@@ -7,5 +7,5 @@ This ELF binary encapsulates over the original target binary being protected. It
 `ward` will automatically compile and inject the source for the protector application. However, if you choose to do so manually yourself, make sure you have `libelf` installed and:
 
 ```
-$ gcc -Wall protector/protect.c protector/runtime.c -lelf
+$ gcc -Wall protector/protector.c protector/runtime.c -lelf
 ```
