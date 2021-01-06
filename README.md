@@ -1,6 +1,12 @@
 # ward
 
-An experimental security-hardened notary for Linux binaries. We convert commonly weaponized ELF infection techniques into a defensive mechanism for runtime application self-protection, without the need of whole-system security provenance. Inspired by application notarization on macOS.
+An experimental security-hardened notary for Linux binaries. 
+
+## Introduction
+
+This is an experimental notary that attempts to convert a commonly weaponized ELF infection technique into a defensive 
+mechanism for runtime application self-protection, without the need of whole-system security provenance. This was inspired by how
+hardening is enforced by application notarization on macOS.
 
 ## Technique
 
@@ -12,5 +18,6 @@ An experimental security-hardened notary for Linux binaries. We convert commonly
 
 ## Disclaimer
 
-* Most stuff you try to protect will probably break
-* Probably not the most resilient mitigation against adversarials.
+* Most stuff you try to protect will probably break.
+* Probably not the most resilient mitigation against strong adversarials.
+* Advanced EDR heuristics may pick up protected executables as packed malware.

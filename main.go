@@ -68,7 +68,7 @@ func main() {
                         return err
                     }
 
-                    // run PT_NOTE injection vector
+                    // run PT_NOTE injection vector to inject target binary into host
                     injector.InjectBinary()
                     fmt.Println("[*] Done! Find the protected application at", *protector)
                     return nil
@@ -87,6 +87,13 @@ func main() {
                     if !fileExists(binary) {
                         return errors.New("Target ELF path does not exist for verification.")
                     }
+
+                    // passive open to ensure path is valid ELF
+                    if _, err := elf.Open(binary); err != nil {
+                        return errors.New("Cannot open and parse target as ELF binary.")
+                    }
+
+                    // calculate digital signature of file
 
                     return nil
                 },

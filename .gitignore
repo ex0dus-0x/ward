@@ -7,10 +7,11 @@ protector/protector
 *.o
 *.so
 *.out
+*_out
 
+ls
 app
 ward
-enforce
 elfinject
 
 target/
