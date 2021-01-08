@@ -82,7 +82,11 @@ int main(int argc, char *argv[])
     if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL)
         die(-1, elf_errmsg(-1));
 
-    /* iterate over segments and find rewritten PT_LOAD */
+    /* iterate over program headers and find rewritten PT_NOTE */
+
+    /* get virtual address offset and file size to read */
+
+    /* read ELF file pointed to in-memory */
 
     /* close file and reuse for memfd */
     close(fd);

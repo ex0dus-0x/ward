@@ -3,6 +3,7 @@ package main
 import (
     "os"
     "path"
+    "bytes"
     "errors"
     "runtime"
     "os/exec"
@@ -104,8 +105,32 @@ func NewInjector(binpath string, protector string) (*Injector, error) {
 }
 
 
-// Helper used to inject the original host into the new protector one through the commonly
-// weaponized PT_NOTE to PT_LOAD infection vector.
+// Helper used to modify the state of the shstrtab section in the ELF binary with the
+// new section name string.
+func (inj *Injector) OverwriteSection() error {
+
+    // store index to section string table
+    for _, sec := range inj.Protector.Sections {
+        if sec.SectionHeader.Name == ".shstrtab" {
+            shstrtab, err := sec.Data()
+            if err != nil {
+                return err
+            }
+
+            // change section name
+            bytes.Replace(shstrtab, []byte(".note.ABI-tag"), []byte(".protected"), 1);
+
+            // commit back to protector ELF
+            break
+        }
+    }
+
+    return nil
+}
+
+
+// Method used to inject the original host into the new protector one through the 
+// commonly weaponized PT_NOTE to PT_LOAD infection vector.
 func (inj *Injector) InjectBinary() error {
 
     // align code address to be congruent to file offset
@@ -114,26 +139,32 @@ func (inj *Injector) InjectBinary() error {
     // find code section to rename and rewrite for appended code
     for _, sec := range inj.Protector.Sections {
         if sec.SectionHeader.Name == ".note.ABI-tag" {
-            sec.SectionHeader.Name = ".injected"
             sec.SectionHeader.Type = elf.SHT_PROGBITS
             sec.SectionHeader.Flags = elf.SHF_ALLOC | elf.SHF_EXECINSTR
-            sec.SectionHeader.Addr = 0xc000000
+            sec.SectionHeader.Addr = 0xc000000 + uint64(inj.Filesize)
             sec.SectionHeader.Offset = uint64(offset)
-            //sec.SectionHeader.Size = 0 // TODO
+            sec.SectionHeader.Size = uint64(inj.Filesize)
             sec.SectionHeader.Link = 0
             sec.SectionHeader.Info = 0
             sec.SectionHeader.Addralign = uint64(16)
             sec.SectionHeader.Entsize = 0
-            break
         }
     }
 
-    // find a rewritable program header that has PT_NOTE segment
+    // overwrite the section name in shstrtab
+    inj.OverwriteSection()
+
+
+    // find a rewritable program header that has PT_NOTE segment, point to new section
+    // with the injected target bytes we want to parse out in our protector.
     for _, seg := range inj.Protector.Progs {
         if seg.Type == elf.PT_NOTE {
-            seg.Type = elf.PT_NOTE
+            //seg.Type = elf.PT_LOAD
             seg.Vaddr = 0xc000000 + uint64(inj.Filesize)
             seg.Flags = elf.PF_R | elf.PF_X
+            seg.Filesz += uint64(len(inj.Target))
+            seg.Memsz += uint64(len(inj.Target))
+            seg.Off = uint64(inj.Filesize)
         }
     }
 
