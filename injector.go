@@ -14,6 +14,10 @@ import (
     "github.com/Binject/debug/elf"
 )
 
+const (
+    PROTECTOR_SECTION = ".ward.protect"
+)
+
 // Helper that compiles a new protection runtime application with `clang` for use with
 // the defensive injector. Returns the bytes of the final blob compiled.
 func Provision(name string, overwrite bool) (*string, error) {
@@ -109,6 +113,9 @@ func NewInjector(binpath string, protector string) (*Injector, error) {
 // new section name string.
 func (inj *Injector) OverwriteSection() error {
 
+    var newShstrtab []byte
+    var overwriteOffset int64
+
     // store index to section string table
     for _, sec := range inj.Protector.Sections {
         if sec.SectionHeader.Name == ".shstrtab" {
@@ -117,14 +124,24 @@ func (inj *Injector) OverwriteSection() error {
                 return err
             }
 
-            // change section name
-            bytes.Replace(shstrtab, []byte(".note.ABI-tag"), []byte(".protected"), 1);
-
-            // commit back to protector ELF
+            // change section name to one with same length
+            newShstrtab = bytes.Replace(shstrtab, []byte(".note.ABI-tag"), []byte(PROTECTOR_SECTION), 1)
+            overwriteOffset = int64(sec.SectionHeader.Offset)
             break
         }
     }
 
+    // commit back to protector ELF by reopening for writing
+    tempfile, err := os.OpenFile(inj.Filepath, os.O_RDWR, 0644)
+    if err != nil {
+        return err
+    }
+
+    // seek to offset and write
+    if _, err := tempfile.WriteAt(newShstrtab, overwriteOffset); err != nil {
+        return err
+    }
+    tempfile.Close()
     return nil
 }
 
@@ -136,9 +153,12 @@ func (inj *Injector) InjectBinary() error {
     // align code address to be congruent to file offset
     offset := (len(inj.Target) % 4096) - (0xc000000 % 4096)
 
+    // overwrite the section name in shstrtab
+    inj.OverwriteSection()
+
     // find code section to rename and rewrite for appended code
     for _, sec := range inj.Protector.Sections {
-        if sec.SectionHeader.Name == ".note.ABI-tag" {
+        if sec.SectionHeader.Name == PROTECTOR_SECTION {
             sec.SectionHeader.Type = elf.SHT_PROGBITS
             sec.SectionHeader.Flags = elf.SHF_ALLOC | elf.SHF_EXECINSTR
             sec.SectionHeader.Addr = 0xc000000 + uint64(inj.Filesize)
@@ -150,10 +170,6 @@ func (inj *Injector) InjectBinary() error {
             sec.SectionHeader.Entsize = 0
         }
     }
-
-    // overwrite the section name in shstrtab
-    inj.OverwriteSection()
-
 
     // find a rewritable program header that has PT_NOTE segment, point to new section
     // with the injected target bytes we want to parse out in our protector.
