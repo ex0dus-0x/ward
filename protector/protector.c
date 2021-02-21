@@ -17,6 +17,7 @@
 #include <sys/mman.h>
 
 #include <libelf.h>
+#include <gelf.h>
 
 #include "runtime.h"
 
@@ -45,7 +46,7 @@ static void write_fd(int fd, const char *str, size_t len)
 
 
 /* executes code in-memory using memfd_create */
-void exec_safe(const char *data)
+void exec_safe(char *data)
 {
     int fd;
 
@@ -83,12 +84,45 @@ int main(int argc, char *argv[])
         die(-1, elf_errmsg(-1));
 
     /* iterate over program headers and find rewritten PT_NOTE */
+    size_t n;
+    int ret = elf_getphdrnum(e, &n);
+    if (ret != 0)
+        die(-1, "Cannot parse any program headers");
+    
+    GElf_Phdr* phdr = NULL;
+    for (size_t i = 0; i < n; i++) {
+        GElf_Phdr tmp;
+        if (!gelf_getphdr(e, i, &tmp))
+            die(-1, "Cannot get program header");
+
+        switch (tmp.p_type) {
+        case PT_NOTE:
+            phdr = &tmp;
+            break;
+        default:
+            continue;
+        }
+    }
+
+    if (!phdr)
+        die(-1, "Cannot find PT_NOTE segment to further parse");
 
     /* get virtual address offset and file size to read */
+    Elf64_Off offset = phdr->p_offset;
+    Elf64_Xword size = phdr->p_filesz;
 
-    /* read ELF file pointed to in-memory */
+    printf("%d %d\n", offset, size);
+
+    /* read ELF file from offset */
+    char blob[size];
+    lseek(fd, 0, SEEK_SET);
+    ssize_t off = pread(fd, (void*) blob, size, offset);
 
     /* close file and reuse for memfd */
     close(fd);
+
+    /* execute file */
+    printf("Executing...\n");
+    exec_safe(blob);
     return 0;
 }
