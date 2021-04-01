@@ -2,9 +2,8 @@
  * protector.c
  * ===============
  *
- * Implementation of a protector application that parses itself
- * for the original ELF binary, while enforcing a protection runtime to
- * mitigate code injection attacks.
+ * Implementation of an application that implements self-protection techniques,
+ * while unpacking the original executable and executing it filelessly.
  */
 
 #define _GNU_SOURCE

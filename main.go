@@ -12,7 +12,7 @@ import (
 
 const (
     Compiler string = "clang"
-    Description string = "Experimental security-hardened binary notary for ELFs"
+    Description string = "ELF Protection Packer"
 )
 
 func fileExists(path string) bool {
@@ -27,24 +27,24 @@ func main() {
         Usage: Description,
         Commands: []*cli.Command{
             {
-                Name: "protect",
-                Usage: "Given a target binary, inject a self-protection runtime.",
+                Name: "pack",
+                Usage: "Pack a target binary, and inject a self-protection runtime.",
                 Flags: []cli.Flag{
                     &cli.BoolFlag{
                         Name: "overwrite",
-                        Usage: "If set, overwrite the original target binary. (NOT RECOMMENDED)",
+                        Usage: "If set, overwrite the original target binary (NOT RECOMMENDED).",
                         Aliases: []string{"o"},
                     },
                 },
                 Action: func(c *cli.Context) error {
                     binary := c.Args().First()
                     if binary == "" {
-                        return errors.New("No binary specified for protection runtime injection.")
+                        return errors.New("No binary specified for packing.")
                     }
 
                     // check if valid path
                     if !fileExists(binary) {
-                        return errors.New("Target ELF path does not exist for injection.")
+                        return errors.New("Target ELF path does not exist.")
                     }
 
                     // passive open to ensure path is valid ELF
@@ -55,7 +55,7 @@ func main() {
                     overwrite := c.Bool("overwrite")
 
                     // start by provisioning a new protector host
-                    fmt.Println("[*] Provisioning new protection executable")
+                    fmt.Println("[*] Provisioning new packed executable")
                     protector, err := Provision(binary, overwrite)
                     if err != nil {
                         return err
@@ -70,13 +70,14 @@ func main() {
 
                     // run PT_NOTE injection vector to inject target binary into host
                     injector.InjectBinary()
-                    fmt.Println("[*] Done! Find the protected application at", *protector)
+                    fmt.Println("[*] Done! Find the packed application at", *protector)
                     return nil
                 },
             },
+            /* TODO
             {
                 Name: "verify",
-                Usage: "Ensures a protected binary has proper integrity.",
+                Usage: "Validate checksum integrity of the packed executable",
                 Action: func(c *cli.Context) error {
                     binary := c.Args().First()
                     if binary == "" {
@@ -85,7 +86,7 @@ func main() {
 
                     // check if valid path
                     if !fileExists(binary) {
-                        return errors.New("Target ELF path does not exist for verification.")
+                        return errors.New("Target ELF path does not exist.")
                     }
 
                     // passive open to ensure path is valid ELF
@@ -98,6 +99,7 @@ func main() {
                     return nil
                 },
             },
+            */
         },
     }
 

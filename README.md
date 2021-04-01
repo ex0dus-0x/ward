@@ -1,23 +1,21 @@
 # ward
 
-An experimental security-hardened notary for Linux binaries. 
+My implementation of an ELF packer in Golang
 
-## Introduction
+## Build
 
-This is an experimental notary that attempts to convert a commonly weaponized ELF infection technique into a defensive 
-mechanism for runtime application self-protection, without the need of whole-system security provenance. This was inspired by how
-hardening is enforced by application notarization on macOS.
+Use the `Makefile`:
 
-## Technique
+```
+$ make
+```
 
-1. Compile a protector runtime app, which employs several checks to ensure implants aren't attempting to inject themselves into the app
+## Packing Technique
 
-2. `ward` application uses the `PT_NOTE` code cave injection technique to hide a compressed blob of the original target binary
+1. Compile a packer runtime app, which employs several checks to ensure implants aren't attempting to inject themselves into the app
+2. Compress the original executable, and use `PT_NOTE` injection technique to hide statically in a code cave in the packer runtime, writing the file offset to a segment
+3. When executed, the packed executable will retrieve the blob of data from the file offset and use `memfd_create` to execute the original entry point
 
-3. The protector app will read from itself during runtime, decompress the blob and use `memfd_create` to execute the original executable in-memory.
+## License
 
-## Disclaimer
-
-* Most stuff you try to protect will probably break.
-* Probably not the most resilient mitigation against strong adversarials.
-* Advanced EDR heuristics may pick up protected executables as packed malware.
+[MIT]()
