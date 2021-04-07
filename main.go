@@ -12,7 +12,7 @@ import (
 
 const (
     Compiler string = "clang"
-    Description string = "ELF Protection Packer"
+    Description string = "a dumb ELF Packer"
 )
 
 func fileExists(path string) bool {

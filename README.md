@@ -4,6 +4,11 @@ My implementation of an ELF packer in Golang
 
 ## Build
 
+Requirements:
+
+* `make`
+* `clang`
+
 Use the `Makefile`:
 
 ```
