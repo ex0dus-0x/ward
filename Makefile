@@ -3,8 +3,8 @@ CFLAGS = -Wall -O2
 
 all: cli
 
-protect:
-	$(CC) $(CFLAGS) -o protector/protector protector/protector.c protector/runtime.c -lelf
+stub:
+	$(CC) $(CFLAGS) -o stub/stub stub/main.c stub/runtime.c -lelf
 
 clean:
 	rm -f ward *_out

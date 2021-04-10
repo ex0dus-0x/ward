@@ -35,7 +35,7 @@ func Provision(name string, overwrite bool) (*string, error) {
     }
 
     // get path to protector workspace
-    protectorPath := filepath.Join(path.Dir(filename), "protector")
+    protectorPath := filepath.Join(path.Dir(filename), "stub")
     if err := os.Chdir(protectorPath); err != nil {
         return nil, err
     }
@@ -53,7 +53,7 @@ func Provision(name string, overwrite bool) (*string, error) {
 
     // create compilation command
     cmd := exec.Command(Compiler, "-Wall", "-O2", "-o",
-        out, "protector.c", "runtime.c", "-lelf")
+        out, "main.c", "runtime.c", "-lelf")
 
     // execute compilation routine to generate a new binary
     if err := cmd.Run(); err != nil {

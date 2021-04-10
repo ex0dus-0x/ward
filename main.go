@@ -15,7 +15,7 @@ const (
     Description string = "a dumb ELF Packer"
 )
 
-func fileExists(path string) bool {
+func FileExists(path string) bool {
     _, err := os.Stat(path)
     return !os.IsNotExist(err)
 }
@@ -43,7 +43,7 @@ func main() {
                     }
 
                     // check if valid path
-                    if !fileExists(binary) {
+                    if !FileExists(binary) {
                         return errors.New("Target ELF path does not exist.")
                     }
 
@@ -74,32 +74,6 @@ func main() {
                     return nil
                 },
             },
-            /* TODO
-            {
-                Name: "verify",
-                Usage: "Validate checksum integrity of the packed executable",
-                Action: func(c *cli.Context) error {
-                    binary := c.Args().First()
-                    if binary == "" {
-                        return errors.New("No binary specified.")
-                    }
-
-                    // check if valid path
-                    if !fileExists(binary) {
-                        return errors.New("Target ELF path does not exist.")
-                    }
-
-                    // passive open to ensure path is valid ELF
-                    if _, err := elf.Open(binary); err != nil {
-                        return errors.New("Cannot open and parse target as ELF binary.")
-                    }
-
-                    // calculate digital signature of file
-
-                    return nil
-                },
-            },
-            */
         },
     }
 

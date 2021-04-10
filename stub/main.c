@@ -1,5 +1,5 @@
 /*
- * protector.c
+ * stub.c
  * ===============
  *
  * Implementation of an application that implements self-protection techniques,
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 
     /* read ELF file from offset */
     char blob[size];
-    lseek(fd, 0, SEEK_SET);
+    lseek(fd, offset, SEEK_SET);
     ssize_t off = pread(fd, (void*) blob, size, offset);
 
     /* close file and reuse for memfd */
