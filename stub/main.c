@@ -70,37 +70,36 @@ int main(int argc, char *argv[])
     int fd;
     Elf *e;
 
-    /* open ourselves for reading */
+    // TODO: parse out the rest of argv to pass to the program
+
+    // open ourselves for reading
     if ((fd = open(argv[0], O_RDONLY, 0)) < 0)
         die(-1, "cannot read ourselves as file");
 
-    /* check if valid ELF version */
+    // check if valid binary version
     if (elf_version(EV_CURRENT) == EV_NONE)
         die(-1, elf_errmsg(-1));
 
-    /* check if magic number is present */
+    // check if ELF magic number is present
     if ((e = elf_begin(fd, ELF_C_READ, NULL)) == NULL)
         die(-1, elf_errmsg(-1));
 
-    /* iterate over program headers and find rewritten PT_NOTE */
+    // parse out number of program headers
     size_t n;
     int ret = elf_getphdrnum(e, &n);
     if (ret != 0)
         die(-1, "Cannot parse any program headers");
     
+    // get the last PT_LOAD segment
     GElf_Phdr* phdr = NULL;
     for (size_t i = 0; i < n; i++) {
         GElf_Phdr tmp;
         if (!gelf_getphdr(e, i, &tmp))
             die(-1, "Cannot get program header");
 
-        switch (tmp.p_type) {
-        case PT_NOTE:
+        // set counter
+        if (tmp.p_type == PT_LOAD)
             phdr = &tmp;
-            break;
-        default:
-            continue;
-        }
     }
 
     if (!phdr)
@@ -109,8 +108,6 @@ int main(int argc, char *argv[])
     /* get virtual address offset and file size to read */
     Elf64_Off offset = phdr->p_offset;
     Elf64_Xword size = phdr->p_filesz;
-
-    printf("%d %d\n", offset, size);
 
     /* read ELF file from offset */
     char blob[size];

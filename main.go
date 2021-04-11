@@ -10,11 +10,6 @@ import (
     "github.com/urfave/cli/v2"
 )
 
-const (
-    Compiler string = "clang"
-    Description string = "a dumb ELF Packer"
-)
-
 func FileExists(path string) bool {
     _, err := os.Stat(path)
     return !os.IsNotExist(err)
@@ -24,7 +19,7 @@ func FileExists(path string) bool {
 func main() {
     app := &cli.App {
         Name: "ward",
-        Usage: Description,
+        Usage: "dump ELF packer",
         Commands: []*cli.Command{
             {
                 Name: "pack",

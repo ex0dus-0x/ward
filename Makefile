@@ -3,7 +3,7 @@ CFLAGS = -Wall -O2
 
 all: cli
 
-stub:
+sample:
 	$(CC) $(CFLAGS) -o stub/stub stub/main.c stub/runtime.c -lelf
 
 clean:
