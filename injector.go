@@ -2,28 +2,27 @@ package main
 
 import (
     "os"
+    "log"
     "path"
-    "bytes"
     "errors"
     "runtime"
     "os/exec"
     "io/ioutil"
     "path/filepath"
 
-    // support for mutating and writing ELFs
+    // extends support for mutating and writing ELFs
     "github.com/Binject/debug/elf"
 )
 
 const (
     Compiler string = "clang"
-    StubSectionName string = ".ward.protect"
+    //StubSectionName string = ".ward.protect"
 )
 
-// Helper that compiles a new protection runtime application with `clang` for use with
-// the defensive injector. Returns the bytes of the final blob compiled.
+// Helper that compiles a new stub application with `clang` to be packed.
 func Provision(name string, overwrite bool) (*string, error) {
 
-    // find directory to stub path in package
+    // find directory to stub path in Golang package
     _, filename, _, ok := runtime.Caller(0)
     if !ok {
         return nil, errors.New("Cannot find package path to provision stub program.")
@@ -43,7 +42,7 @@ func Provision(name string, overwrite bool) (*string, error) {
 
     // if overwrite is set, rewrite the original path (might be dangerous)
     var out string
-    if overwrite != true {
+    if !overwrite {
         out = filepath.Join(cwd, name + "_out")
     } else {
         out, err = filepath.Abs(name)
@@ -110,6 +109,7 @@ func NewInjector(binpath string, stub string) (*Injector, error) {
 }
 
 
+/*
 // Helper used to modify the state of the shstrtab section in the ELF binary with the
 // new section name string.
 func (inj *Injector) OverwriteSection() error {
@@ -145,48 +145,26 @@ func (inj *Injector) OverwriteSection() error {
     tempfile.Close()
     return nil
 }
+*/
 
 
-// Method used to inject the original host into the new stub one through the 
-// commonly weaponized PT_NOTE to PT_LOAD infection vector.
+// Method used to inject the original host into the new stub one by using a modified
+// version of the PT_NOTE infection method, where the
 func (inj *Injector) InjectBinary() error {
 
-    // align code address to be congruent to file offset
-    offset := (len(inj.Target) % 4096) - (0xc000000 % 4096)
-
-    // overwrite the section name in shstrtab
-    inj.OverwriteSection()
-
-    // find code section to rename and rewrite for appended code
-    for _, sec := range inj.StubProgram.Sections {
-        if sec.SectionHeader.Name == StubSectionName {
-            sec.SectionHeader.Type = elf.SHT_PROGBITS
-            sec.SectionHeader.Flags = elf.SHF_ALLOC | elf.SHF_EXECINSTR
-            sec.SectionHeader.Addr = 0xc000000 + uint64(inj.Filesize)
-            sec.SectionHeader.Offset = uint64(offset)
-            sec.SectionHeader.Size = uint64(inj.Filesize)
-            sec.SectionHeader.Link = 0
-            sec.SectionHeader.Info = 0
-            sec.SectionHeader.Addralign = uint64(16)
-            sec.SectionHeader.Entsize = 0
-        }
-    }
-
-    // find a rewritable program header that has PT_NOTE segment, point to new section
-    // with the injected target bytes we want to parse out in our stub.
+    // we only modify p_filesz to be size of packed ELF, and p_off to be offset in current file
+    log.Println("Finding PT_NOTE segment for injecting metadata")
     for _, seg := range inj.StubProgram.Progs {
         if seg.Type == elf.PT_NOTE {
-            seg.Type = elf.PT_LOAD
-            seg.Vaddr = 0xc000000 + uint64(inj.Filesize)
-            seg.Flags = elf.PF_R | elf.PF_X
-            seg.Filesz += uint64(len(inj.Target))
-            seg.Memsz += uint64(len(inj.Target))
+            seg.Filesz = uint64(len(inj.Target))
             seg.Off = uint64(inj.Filesize)
+            log.Printf("Offset: %d Size: %d\n", seg.Off, seg.Filesz)
             break
         }
     }
 
     // append target binary to the end of the stub host
+    log.Println("Writing (not yet encoded) ELF to stub")
     inj.StubProgram.InsertionEOF = inj.Target
 
     // get bytes from final stub state
@@ -194,8 +172,6 @@ func (inj *Injector) InjectBinary() error {
     if err != nil {
         return nil
     }
-
-    // close stub after mutating and parsing bytes
     inj.StubProgram.Close()
 
     // overwrite original stub with changes in ELF format
@@ -204,7 +180,6 @@ func (inj *Injector) InjectBinary() error {
         return err
     }
 
-    // write bytes and close
     f.Write(elfBytes)
     f.Close()
     return nil

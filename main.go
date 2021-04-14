@@ -2,24 +2,18 @@ package main
 
 import (
     "os"
-    "fmt"
     "log"
     "errors"
     "debug/elf"
 
+
     "github.com/urfave/cli/v2"
 )
-
-func FileExists(path string) bool {
-    _, err := os.Stat(path)
-    return !os.IsNotExist(err)
-}
-
 
 func main() {
     app := &cli.App {
         Name: "ward",
-        Usage: "dump ELF packer",
+        Usage: "Dumb ELF packer",
         Commands: []*cli.Command{
             {
                 Name: "pack",
@@ -32,40 +26,39 @@ func main() {
                     },
                 },
                 Action: func(c *cli.Context) error {
+                    log.Println("Starting up ward")
+
                     binary := c.Args().First()
                     if binary == "" {
                         return errors.New("No binary specified for packing.")
                     }
 
-                    // check if valid path
-                    if !FileExists(binary) {
-                        return errors.New("Target ELF path does not exist.")
+                    _, err := os.Stat(binary)
+                    if os.IsNotExist(err) {
+                        return errors.New("ELF file not found at path.")
                     }
 
-                    // passive open to ensure path is valid ELF
+                    log.Println("Checking if valid ELF binary")
                     if _, err := elf.Open(binary); err != nil {
                         return errors.New("Cannot open and parse target as ELF binary.")
                     }
 
                     overwrite := c.Bool("overwrite")
 
-                    // start by provisioning a new protector host
-                    fmt.Println("[*] Provisioning new packed executable")
+                    log.Println("Provisioning stub program for packing")
                     protector, err := Provision(binary, overwrite)
                     if err != nil {
                         return err
                     }
 
-                    // create new injector with target binary and new protector host
-                    fmt.Println("[*] Injecting self-protection into", binary)
+                    log.Println("Packing original executable into stub", binary)
                     injector, err := NewInjector(binary, *protector)
                     if err != nil {
                         return err
                     }
 
-                    // run PT_NOTE injection vector to inject target binary into host
                     injector.InjectBinary()
-                    fmt.Println("[*] Done! Find the packed application at", *protector)
+                    log.Println("Done! Find the packed application at", *protector)
                     return nil
                 },
             },

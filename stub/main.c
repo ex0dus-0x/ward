@@ -45,7 +45,7 @@ static void write_fd(int fd, const char *str, size_t len)
 
 
 /* executes code in-memory using memfd_create */
-void exec_safe(char *data)
+void exec_safe(char *data, size_t len)
 {
     int fd;
 
@@ -55,7 +55,7 @@ void exec_safe(char *data)
         die(fd, "cannot create in-memory fd for code");
 
     /* write ELF blob to in memory fd and execute */
-    write_fd(fd, data, sizeof(data) - 1);
+    write_fd(fd, data, len - 1);
     {
         const char *argv[] = {TEMPFILE, NULL};
         const char *envp[] = {NULL};
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     if (ret != 0)
         die(-1, "Cannot parse any program headers");
     
-    // get the last PT_LOAD segment
+    // get the first PT_NOTE segment we find
     GElf_Phdr* phdr = NULL;
     for (size_t i = 0; i < n; i++) {
         GElf_Phdr tmp;
@@ -98,19 +98,22 @@ int main(int argc, char *argv[])
             die(-1, "Cannot get program header");
 
         // set counter
-        if (tmp.p_type == PT_LOAD)
+        if (tmp.p_type == PT_NOTE) {
             phdr = &tmp;
+            break;
+        }
     }
 
     if (!phdr)
         die(-1, "Cannot find PT_NOTE segment to further parse");
 
-    /* get virtual address offset and file size to read */
+    /* get the offset to ELF in stub file and file size to read */
     Elf64_Off offset = phdr->p_offset;
     Elf64_Xword size = phdr->p_filesz;
 
     /* read ELF file from offset */
     char blob[size];
+    lseek(fd, 0, SEEK_SET);
     lseek(fd, offset, SEEK_SET);
     ssize_t off = pread(fd, (void*) blob, size, offset);
 
@@ -119,6 +122,6 @@ int main(int argc, char *argv[])
 
     /* execute file */
     printf("Executing...\n");
-    exec_safe(blob);
+    exec_safe(blob, size);
     return 0;
 }
