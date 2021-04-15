@@ -43,7 +43,7 @@ func Provision(name string, overwrite bool) (*string, error) {
     // if overwrite is set, rewrite the original path (might be dangerous)
     var out string
     if !overwrite {
-        out = filepath.Join(cwd, name + "_out")
+        out = filepath.Join(cwd, name + ".packed")
     } else {
         out, err = filepath.Abs(name)
         if err != nil {
@@ -52,7 +52,7 @@ func Provision(name string, overwrite bool) (*string, error) {
     }
 
     // create compilation command
-    cmd := exec.Command(Compiler, "-Wall", "-O2", "-D_FORTIFY_SOURCE=2", "-o",
+    cmd := exec.Command(Compiler, "-static", "-O2", "-D_FORTIFY_SOURCE=2", "-o",
         out, "main.c", "runtime.c", "-lelf")
 
     // execute compilation routine to generate a new binary

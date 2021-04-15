@@ -1,17 +1,12 @@
 example/app
 example/*.so
 
-protector/src/main.rs
-protector/protector
+stub/stub
 
 *.o
 *.so
 *.out
-*_out
+*.packed
 
 ls
-app
 ward
-elfinject
-
-target/

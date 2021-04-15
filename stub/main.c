@@ -26,7 +26,7 @@
 /* helper method to exit with message */
 static void die(int res, const char *msg)
 {
-    printf("error: %s\n", msg);
+    printf("Error: %s\n", msg);
     exit(res);
 }
 
@@ -43,34 +43,10 @@ static void write_fd(int fd, const char *str, size_t len)
     } while (cnt != len);
 }
 
-
-/* executes code in-memory using memfd_create */
-void exec_safe(char *data, size_t len)
-{
-    int fd;
-
-    /* create memfd */
-    fd = memfd_create(TEMPFILE, 0);
-    if (fd == -1)
-        die(fd, "cannot create in-memory fd for code");
-
-    /* write ELF blob to in memory fd and execute */
-    write_fd(fd, data, len - 1);
-    {
-        const char *argv[] = {TEMPFILE, NULL};
-        const char *envp[] = {NULL};
-        fexecve(fd, (char * const *) argv, (char * const *) envp);
-    }
-    close(fd);
-}
-
-
-int main(int argc, char *argv[])
+int main(int argc, char *argv[], char *envp[])
 {
     int fd;
     Elf *e;
-
-    // TODO: parse out the rest of argv to pass to the program
 
     // open ourselves for reading
     if ((fd = open(argv[0], O_RDONLY, 0)) < 0)
@@ -88,16 +64,15 @@ int main(int argc, char *argv[])
     size_t n;
     int ret = elf_getphdrnum(e, &n);
     if (ret != 0)
-        die(-1, "Cannot parse any program headers");
+        die(-1, "cannot parse any program headers");
     
     // get the first PT_NOTE segment we find
     GElf_Phdr* phdr = NULL;
     for (size_t i = 0; i < n; i++) {
         GElf_Phdr tmp;
         if (!gelf_getphdr(e, i, &tmp))
-            die(-1, "Cannot get program header");
+            die(-1, "cannot get program header");
 
-        // set counter
         if (tmp.p_type == PT_NOTE) {
             phdr = &tmp;
             break;
@@ -105,23 +80,32 @@ int main(int argc, char *argv[])
     }
 
     if (!phdr)
-        die(-1, "Cannot find PT_NOTE segment to further parse");
+        die(-1, "cannot find PT_NOTE segment to further parse");
 
-    /* get the offset to ELF in stub file and file size to read */
+    // get attributes for PT_NOTE segment
     Elf64_Off offset = phdr->p_offset;
     Elf64_Xword size = phdr->p_filesz;
 
-    /* read ELF file from offset */
-    char blob[size];
+    // read packed executable from file offset
+    char data[size];
     lseek(fd, 0, SEEK_SET);
     lseek(fd, offset, SEEK_SET);
-    ssize_t off = pread(fd, (void*) blob, size, offset);
+    pread(fd, (void*) data, size, offset);
 
-    /* close file and reuse for memfd */
     close(fd);
 
-    /* execute file */
-    printf("Executing...\n");
-    exec_safe(blob, size);
+    // create anonymous file
+    fd = memfd_create(TEMPFILE, 0);
+    if (fd == -1)
+        die(fd, "cannot create in-memory fd for code");
+
+    // write ELF data to in memory fd and execute
+    write_fd(fd, data, size - 1);
+    {
+        //const char *args[] = {TEMPFILE, NULL};
+        argv[0] = TEMPFILE;
+        fexecve(fd, (char * const *) argv, (char * const *) envp);
+    }
+    close(fd);
     return 0;
 }
