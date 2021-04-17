@@ -4,11 +4,13 @@ import (
     "os"
     "log"
     "path"
+    "bytes"
     "errors"
     "runtime"
     "os/exec"
     "io/ioutil"
     "path/filepath"
+    "compress/zlib"
 
     // extends support for mutating and writing ELFs
     "github.com/Binject/debug/elf"
@@ -53,7 +55,7 @@ func Provision(name string, overwrite bool) (*string, error) {
 
     // create compilation command
     cmd := exec.Command(Compiler, "-static", "-O2", "-D_FORTIFY_SOURCE=2", "-o",
-        out, "main.c", "runtime.c", "-lelf")
+        out, "main.c", "runtime.c", "-lelf", "-lz")
 
     // execute compilation routine to generate a new binary
     if err := cmd.Run(); err != nil {
@@ -73,8 +75,8 @@ func Provision(name string, overwrite bool) (*string, error) {
 // target binary and creates a protected binary.
 type Injector struct {
     Filepath string         // path to the stub host
-    Filesize int64          // size of the stub host
-    StubProgram *elf.File     // parsed ELF of the stub host
+    Offset int64            // represents offset and filesize of stub
+    StubProgram *elf.File   // parsed ELF of the stub host
     Target []byte           // parsed bytes of the target binary to protect
 }
 
@@ -93,6 +95,13 @@ func NewInjector(binpath string, stub string) (*Injector, error) {
         return nil, err
     }
     fsize := f.Size()
+
+    // apply zlib compression
+    var buf bytes.Buffer
+    writer := zlib.NewWriter(&buf)
+    writer.Write(targetBytes)
+    writer.Close()
+    _ = buf.Bytes()
 
     // reopen and parse stub as ELF binary
     binary, err := elf.Open(stub)
@@ -157,7 +166,7 @@ func (inj *Injector) InjectBinary() error {
     for _, seg := range inj.StubProgram.Progs {
         if seg.Type == elf.PT_NOTE {
             seg.Filesz = uint64(len(inj.Target))
-            seg.Off = uint64(inj.Filesize)
+            seg.Off = uint64(inj.Offset)
             log.Printf("Offset: %d Size: %d\n", seg.Off, seg.Filesz)
             break
         }

