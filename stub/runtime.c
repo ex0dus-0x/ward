@@ -1,10 +1,8 @@
 /* runtime.c
  * ==============
- *
- * 		Implementation of the runtime protection functions used by the protector
- * 		app before any form of execution occurs.
+ * Implements no-stdlib code injection checks to prevent executable from being traced.
  */
-#include <fcntl.h> // TODO: inline assembly file i/o
+#include <fcntl.h>
 #include <stdio.h>
 
 #define BUF_SIZE 2048

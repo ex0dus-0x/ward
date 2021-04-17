@@ -1,7 +1,6 @@
 /*
  * stub.c
  * ===============
- *
  * Implementation of an application that implements self-protection techniques,
  * while unpacking the original executable and executing it filelessly.
  */
@@ -19,8 +18,6 @@
 #include <gelf.h>
 #include <zlib.h>
 
-#include "runtime.h"
-
 #define TEMPFILE "[kworker/1:1]"
 #define MIN(x, y) x > y ? y : x
 
@@ -31,13 +28,6 @@ static void die(int res, const char *msg)
     exit(res);
 }
 
-
-/* decompress executable blob for memfd */
-static void decompress()
-{
-
-
-}
 
 /* safely write buffer to a given input file descriptor */
 static void write_fd(int fd, const char *str, size_t len)
@@ -108,6 +98,8 @@ int main(int argc, char *argv[], char *envp[])
     close(fd);
 
     // decompress the data parsed
+    Byte *uncompressed;
+    uLong len;
 
     // create anonymous file
     fd = memfd_create(TEMPFILE, 0);

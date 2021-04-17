@@ -32,10 +32,3 @@ example  go.mod  go.sum  injector.go  ls  ls.packed  main.go  Makefile  README.m
 
 __ward__ implements a code injection check as part of its "anti-analysis". This is rudimentary
 and can be substituted for other techniques, obfuscations, or none at all.
-
-## TODO
-
-* [ ] Actual compression of some sort
-
-* [ ] Stealthy dropping - execute will remove binary from disk, maybe option to read executable
-from socket to C2.
