@@ -1,6 +1,12 @@
 # ward
 
-a dumb ELF packer
+Simple ELF runtime packer for creating stealthy droppers
+
+## Introduction
+
+This is a simple implementation of an ELF packer that creates stealthy droppers for loading
+malicious ELFs in-memory. Useful for red teamers trying to proliferate a payload while evading
+detection.
 
 ## How It Works
 
@@ -23,12 +29,14 @@ $ ward pack ./ls
 ```
 
 When you execute it now, the stub program will read the compressed executable from itself,
-and create an anonymous file descriptor for execution. What the user sees however is the reg
+and create an anonymous file descriptor for execution. Once executed, the file will disappear
+from the disk:
 
 ```
 $ ./ls.packed
 example  go.mod  go.sum  injector.go  ls  ls.packed  main.go  Makefile  README.md  stub  ward
 ```
 
-__ward__ implements a code injection check as part of its "anti-analysis". This is rudimentary
-and can be substituted for other techniques, obfuscations, or none at all.
+## License
+
+[MIT License](https://codemuch.tech/docs/license.txt)
