@@ -3,69 +3,52 @@ package main
 import (
 	"debug/elf"
 	"errors"
+	"flag"
 	"log"
 	"os"
-
-	"github.com/urfave/cli/v2"
 )
 
-func main() {
-	app := &cli.App{
-		Name:  "ward",
-		Usage: "Dumb ELF packer",
-		Commands: []*cli.Command{
-			{
-				Name:  "pack",
-				Usage: "Pack a target binary, and inject a self-protection runtime.",
-				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:    "overwrite",
-						Usage:   "If set, overwrite the original target binary (NOT RECOMMENDED).",
-						Aliases: []string{"o"},
-					},
-				},
-				Action: func(c *cli.Context) error {
-					log.Println("Starting up ward")
+func RunWard() error {
+	overwrite := flag.Bool("overwrite", false, "If set, overwrite original executable (NOT RECOMMENDED)")
+    //compress := flag.Bool("compress", true, "If set, compress executable when packing with zlib  (default is set)")
+	flag.Parse()
 
-					binary := c.Args().First()
-					if binary == "" {
-						return errors.New("No binary specified for packing.")
-					}
+	args := flag.Args()
+	if len(args) != 1 {
+		return errors.New("Specify a single ELF binary for packing.")
+	}
+	binary := args[0]
+	log.Println("Starting ward to pack", binary)
 
-					_, err := os.Stat(binary)
-					if os.IsNotExist(err) {
-						return errors.New("ELF file not found at path.")
-					}
-
-					log.Println("Checking if valid ELF binary")
-					if _, err := elf.Open(binary); err != nil {
-						return errors.New("Cannot open and parse target as ELF binary.")
-					}
-
-					overwrite := c.Bool("overwrite")
-
-					log.Println("Provisioning stub program for packing")
-					protector, err := Provision(binary, overwrite)
-					if err != nil {
-						return err
-					}
-
-					log.Println("Packing original executable into stub", binary)
-					injector, err := NewInjector(binary, *protector)
-					if err != nil {
-						return err
-					}
-
-					injector.InjectBinary()
-					log.Println("Done! Find the packed application at", *protector)
-					return nil
-				},
-			},
-		},
+	_, err := os.Stat(binary)
+	if os.IsNotExist(err) {
+		return errors.New("ELF file not found at path.")
 	}
 
-	err := app.Run(os.Args)
+	log.Println("Checking if valid ELF binary")
+	if _, err := elf.Open(binary); err != nil {
+		return errors.New("Cannot open and parse target as ELF binary.")
+	}
+
+	log.Println("Provisioning stub program for packing")
+	protector, err := Provision(binary, *overwrite)
 	if err != nil {
+		return err
+	}
+
+	log.Println("Packing original executable into stub", binary)
+	injector, err := NewInjector(binary, *protector)
+	if err != nil {
+		return err
+	}
+
+	injector.InjectBinary()
+	log.Println("Done! Find the packed application at", *protector)
+	return nil
+}
+
+func main() {
+	if err := RunWard(); err != nil {
 		log.Fatal(err)
 	}
 }
