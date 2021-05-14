@@ -16,7 +16,12 @@
 
 #include <libelf.h>
 #include <gelf.h>
+
+#ifdef COMPRESS
 #include <zlib.h>
+#endif
+
+#include "runtime.h"
 
 #define TEMPFILE "[kworker/1:1]"
 #define MIN(x, y) x > y ? y : x
@@ -24,7 +29,7 @@
 /* helper method to exit with message */
 static void die(int res, const char *msg)
 {
-    printf("Error: %s\n", msg);
+    fprintf(stderr, "Error: %s\n", msg);
     exit(res);
 }
 
@@ -36,15 +41,19 @@ static void write_fd(int fd, const char *str, size_t len)
     do {
         ssize_t result = write(fd, str + cnt, MIN(len - cnt, 0x7ffff000));
         if (result == -1)
-            die(-1, "writing to memfd failed\n");
+            die(-1, "writing to memfd failed");
         cnt += result;
     } while (cnt != len);
 }
 
-/* handles anti-analysis checks */
+/* handles anti-tampering checks before entry point */
+#ifdef TAMPERPROOF
 void __attribute__ ((constructor)) premain()
 {
+    if (check_preloading() || check_mmaps())
+        die(-1, "tampering through code injection detected");
 }
+#endif
 
 int main(int argc, char *argv[], char *envp[])
 {
@@ -97,9 +106,11 @@ int main(int argc, char *argv[], char *envp[])
 
     close(fd);
 
+#ifdef COMPRESS
     // decompress the data parsed
     Byte *uncompressed;
     uLong len;
+#endif
 
     // create anonymous file
     fd = memfd_create(TEMPFILE, 0);

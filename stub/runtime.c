@@ -5,9 +5,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#define BUF_SIZE 2048
-
-extern char **environ;
+#include "runtime.h"
 
 /* static helper clone for str substitution */
 static char* afterSubstr(char *str, const char *sub)

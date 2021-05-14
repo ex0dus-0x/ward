@@ -8,6 +8,12 @@ This is a simple implementation of an ELF packer that creates stealthy droppers 
 malicious ELFs in-memory. Useful for red teamers trying to proliferate a payload while evading
 detection.
 
+## Features
+
+* Stealthy - payload is injected in ELF format, and loaded through `memfd`-based execution
+* Zlib compression for packed executables
+* Anti-tampering with code injection prevention
+
 ## How It Works
 
 __ward__ compresses a target ELF executable and injects it into a stub program,
@@ -17,7 +23,7 @@ and `fexec`.
 For instance, run __ward__ on a copy of `ls`:
 
 ```
-$ ward pack ./ls
+$ ward ./ls
 2021/04/14 20:26:07 Starting up ward
 2021/04/14 20:26:07 Checking if valid ELF binary
 2021/04/14 20:26:07 Provisioning stub program for packing

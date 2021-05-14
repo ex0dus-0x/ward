@@ -9,8 +9,10 @@ import (
 )
 
 func RunWard() error {
-	overwrite := flag.Bool("overwrite", false, "If set, overwrite original executable (NOT RECOMMENDED)")
-    //compress := flag.Bool("compress", true, "If set, compress executable when packing with zlib  (default is set)")
+	overwrite := flag.Bool("overwrite", false, "If set, overwrite original executable path (NOT RECOMMENDED)")
+    compress := flag.Bool("compress", true, "If set, compress executable when packing with zlib  (default is set)")
+    protect := flag.Bool("protect", true, "If set, incorporate code injection prevention for anti-tampering against the sample (default is set)")
+
 	flag.Parse()
 
 	args := flag.Args()
@@ -31,7 +33,7 @@ func RunWard() error {
 	}
 
 	log.Println("Provisioning stub program for packing")
-	protector, err := Provision(binary, *overwrite)
+	protector, err := Provision(binary, *overwrite, *compress, *protect)
 	if err != nil {
 		return err
 	}

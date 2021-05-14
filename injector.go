@@ -22,7 +22,7 @@ const (
 )
 
 // Helper that compiles a new stub application with `clang` to be packed.
-func Provision(name string, overwrite bool) (*string, error) {
+func Provision(name string, overwrite bool, compress bool, protect bool) (*string, error) {
 
 	// find directory to stub path in Golang package
 	_, filename, _, ok := runtime.Caller(0)
@@ -53,9 +53,25 @@ func Provision(name string, overwrite bool) (*string, error) {
 		}
 	}
 
-	// create compilation command
-	cmd := exec.Command(Compiler, "-static", "-O2", "-D_FORTIFY_SOURCE=2", "-o",
-		out, "main.c", "runtime.c", "-lelf", "-lz")
+	// create initial compilation command
+	cmd := exec.Command(Compiler, "-o", out, "-static", "-O2", "-D_FORTIFY_SOURCE=2")
+
+    if protect {
+        cmd.Args = append(cmd.Args, "-DTAMPERPROOF")
+    }
+
+    if compress {
+        cmd.Args = append(cmd.Args, "-DCOMPRESS")
+    }
+
+    cmd.Args = append(cmd.Args, "main.c", "runtime.c", "-lelf")
+
+    if compress {
+        cmd.Args = append(cmd.Args, "-lz")
+    }
+
+
+    log.Println("Running ", cmd.Args)
 
 	// execute compilation routine to generate a new binary
 	if err := cmd.Run(); err != nil {
