@@ -45,4 +45,4 @@ example  go.mod  go.sum  injector.go  ls  ls.packed  main.go  Makefile  README.m
 
 ## license
 
-[mit](https://codemuch.tech/docs/license.txt)
+[mit](https://github.com/ex0dus-0x/ward/blob/main/LICENSE.md)
