@@ -9,9 +9,9 @@ import (
 )
 
 func RunWard() error {
-	overwrite := flag.Bool("overwrite", false, "If set, overwrite original executable path (NOT RECOMMENDED)")
-    compress := flag.Bool("compress", true, "If set, compress executable when packing with zlib  (default is set)")
-    protect := flag.Bool("protect", true, "If set, incorporate code injection prevention for anti-tampering against the sample (default is set)")
+	overwrite := flag.Bool("overwrite", false, "Overwrite original executable path (NOT RECOMMENDED)")
+	compress := flag.Bool("compress", true, "Compress executable when packing with zlib (on by default)")
+	protect := flag.Bool("protect", true, "Incorporate code injection prevention (on by default)")
 
 	flag.Parse()
 

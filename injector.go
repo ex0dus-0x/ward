@@ -56,22 +56,21 @@ func Provision(name string, overwrite bool, compress bool, protect bool) (*strin
 	// create initial compilation command
 	cmd := exec.Command(Compiler, "-o", out, "-static", "-O2", "-D_FORTIFY_SOURCE=2")
 
-    if protect {
-        cmd.Args = append(cmd.Args, "-DTAMPERPROOF")
-    }
+	if protect {
+		cmd.Args = append(cmd.Args, "-DTAMPERPROOF")
+	}
 
-    if compress {
-        cmd.Args = append(cmd.Args, "-DCOMPRESS")
-    }
+	if compress {
+		cmd.Args = append(cmd.Args, "-DCOMPRESS")
+	}
 
-    cmd.Args = append(cmd.Args, "main.c", "runtime.c", "-lelf")
+	cmd.Args = append(cmd.Args, "main.c", "runtime.c", "-lelf")
 
-    if compress {
-        cmd.Args = append(cmd.Args, "-lz")
-    }
+	if compress {
+		cmd.Args = append(cmd.Args, "-lz")
+	}
 
-
-    log.Println("Running ", cmd.Args)
+	log.Println("Running ", cmd.Args)
 
 	// execute compilation routine to generate a new binary
 	if err := cmd.Run(); err != nil {

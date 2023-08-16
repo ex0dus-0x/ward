@@ -1,20 +1,20 @@
 # ward
 
-Simple ELF runtime packer for creating stealthy droppers
+ELF runtime packer for creating self-protecting binaries
 
-## Introduction
+## intro
 
 This is a simple implementation of an ELF packer that creates stealthy droppers for loading
 malicious ELFs in-memory. Useful for red teamers trying to proliferate a payload while evading
 detection.
 
-## Features
+## features
 
 * Stealthy - payload is injected in ELF format, and loaded through `memfd`-based execution
 * Zlib compression for packed executables
 * Anti-tampering with code injection prevention
 
-## How It Works
+## how it works
 
 __ward__ compresses a target ELF executable and injects it into a stub program,
 which uses a modified `PT_NOTE` infection technique to execute it in-memory with `memfd_create`
@@ -43,6 +43,6 @@ $ ./ls.packed
 example  go.mod  go.sum  injector.go  ls  ls.packed  main.go  Makefile  README.md  stub  ward
 ```
 
-## License
+## license
 
-[MIT License](https://codemuch.tech/docs/license.txt)
+[mit](https://codemuch.tech/docs/license.txt)
